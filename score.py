@@ -4,6 +4,12 @@ import matplotlib.pyplot as plt
 with open("data_colruyt.json", "r", encoding="utf-8") as f:
     items = json.load(f)
 
+try:
+    with open('ranks.json', "r", encoding="utf-8") as f:
+        saved_scores = json.load(f)
+except:
+    saved_scores = None
+
 def compute_score(item):
     try:
         alcohol = float(item.get("AlcoholVolume", 0))
@@ -23,9 +29,27 @@ scored_items = [x for x in scored_items if x[0] > 0]
 scored_items.sort(reverse=True, key=lambda x: x[0])
 
 rank = 1
+scores = dict()
 for score, item in scored_items:
-    print(f"#{rank} | {score:.2f} | {item.get('LongName', '')} (https://www.colruyt.be/fr/produits/{item.get('commercialArticleNumber')})")
+    product_id = item.get("commercialArticleNumber")
+
+    evol = ""
+    if saved_scores is not None:
+        if product_id not in saved_scores:
+            evol = '🌟 '
+        elif rank > saved_scores[product_id]:
+            evol = '🔺 '
+        elif rank < saved_scores[product_id]:
+            evol = '🔻 '
+        elif rank == saved_scores[product_id]:
+            evol = '🟰 '
+
+    print(f"{evol}#{rank} | {score:.2f} | {item.get('LongName', '')} (https://www.colruyt.be/fr/produits/{product_id})")
+    scores[product_id] = rank
     rank += 1
+
+with open('ranks.json', "w", encoding="utf-8") as f:
+    json.dump(scores, f)
 
 # Distribution plot
 scores = [score for score, _ in scored_items]
